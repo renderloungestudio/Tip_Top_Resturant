@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Place Info</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #fff;
+        color: #000;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 40px 20px;
+      }
+
+      #content {
+        width: 100%;
+        max-width: 500px;
+        padding: 0 20px;
+        text-align: left;
+        position: relative;
+      }
+
+      h3 {
+        font-size: 28px;
+        margin-bottom: 10px;
+        margin-top: 40px;
+      }
+
+      .status-line {
+        font-size: 16px;
+        margin-bottom: 10px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+      }
+
+      .arrow {
+        margin-left: 8px;
+        transition: transform 0.3s;
+      }
+
+      .arrow.open {
+        transform: rotate(180deg);
+      }
+
+      .timing-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 40px 0;
+        display: none;
+      }
+
+      .timing-list.show {
+        display: block;
+      }
+
+      .timing-list li {
+        font-size: 16px;
+        padding: 5px 0;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .rating-box {
+        display: flex;
+        align-items: center;
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+
+      .stars {
+        color: #f5a623;
+        font-size: 18px;
+        margin-left: 10px;
+      }
+
+      .review-count {
+        font-size: 14px;
+        color: #888;
+        margin-bottom: 30px;
+      }
+
+      .review {
+        font-size: 14px;
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        line-height: 1.5;
+        margin-bottom: 20px;
+      }
+
+      .review strong {
+        font-size: 15px;
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .review small {
+        color: gray;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="content">
+      <!-- Close icon removed -->
+
+      <div id="timing" class="section active">
+        <h3>Timings</h3>
+        <div class="status-line" onclick="toggleTiming()">
+          <span id="open-status">Loading status...</span>
+          <span class="arrow" id="arrow">▼</span>
+        </div>
+        <ul class="timing-list" id="timing-list"></ul>
+      </div>
+
+      <div id="reviews" class="section active">
+        <h3>Reviews</h3>
+        <div class="rating-box">
+          <span id="rating">4.1</span>
+          <div class="stars">★★★★☆</div>
+        </div>
+        <div class="review-count" id="review-count">Loading reviews...</div>
+        <div id="review-container"></div>
+      </div>
+    </div>
+
+    <!-- Load Google Maps JS API with Places Library -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyABFA7qyHlUusSFd9dzp9U4-xRp6mfYGZQ&libraries=places"></script>
+    <script>
+      const placeId = 'ChIJqb27XX3CzRIRGQZdhuRRDSA';
+      const service = new google.maps.places.PlacesService(document.createElement('div'));
+
+      // Fetch place details
+      service.getDetails(
+        {
+          placeId,
+          fields: ['name', 'opening_hours', 'rating', 'reviews', 'utc_offset_minutes']
+        },
+        (place, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            // Opening status
+            const isOpen = place.opening_hours && place.opening_hours.isOpen();
+            document.getElementById('open-status').textContent = isOpen ? 'Open now' : 'Closed now';
+
+            // Timing list
+            const timingList = document.getElementById('timing-list');
+            if (place.opening_hours && place.opening_hours.weekday_text) {
+              place.opening_hours.weekday_text.forEach(day => {
+                const [weekday, time] = day.split(': ');
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${weekday}</span><span>${time}</span>`;
+                timingList.appendChild(li);
+              });
+            }
+
+            // Rating
+            document.getElementById('rating').textContent = place.rating.toFixed(1);
+
+            // Review count
+            const reviewCount = place.reviews ? place.reviews.length : 0;
+            document.getElementById('review-count').textContent = `${reviewCount} reviews`;
+
+            // Reviews
+            const reviewContainer = document.getElementById('review-container');
+            if (place.reviews && place.reviews.length) {
+              place.reviews.slice(0, 5).forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'review';
+                div.innerHTML = `
+                  <strong>${r.author_name}</strong>
+                  <small>${r.relative_time_description}</small>
+                  <p>${r.text}</p>
+                `;
+                reviewContainer.appendChild(div);
+              });
+            }
+          } else {
+            document.getElementById('open-status').textContent = 'Unable to fetch place details.';
+          }
+        }
+      );
+
+      // Toggle timing list
+      function toggleTiming() {
+        const list = document.getElementById('timing-list');
+        const arrow = document.getElementById('arrow');
+        list.classList.toggle('show');
+        arrow.classList.toggle('open');
+      }
+    </script>
+  </body>
+</html>
